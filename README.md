@@ -61,6 +61,79 @@
 (setTitle에서 제목을 인코딩해서 넣는다든지 하는)  
   
 ### 구현 방법
+1. 공통 프로세스를 인터페이스 추상메소드로 정의한다. (메소드 체이닝)
+3. Concrete Builder를 통해 각기 다른 표현을 만드는 방식을 구현한다.  
+4. 자신이 원하는 객체의 형태에 따라서(Long Tour인지 Short Tour인지..)
+   Concrete Builder를 설정하여 객체를 생성한다.  
+   
+빌더 패턴에도 필요에 따라 다양한 구현 방법이 있다.  
+대표적으로, 필드 주입 순서를 강제하고 싶은 경우에는 다음과 같이 구현한다.  
+
+    <Builder.interface>
+    public Builder stepA();
+    public Builder stepB();
+    public Builder stepC();
+    public Product build();
+    
+구현 후
+    
+    <StepABuilder.interface>
+    public StepBBuilder stepA();
+    
+    <StepBBuilder.interface>
+    public StepCBuilder stepB();
+    
+    <StepCBuilder.interface>
+    public Builder stepC();
+    
+    <Builder.interface>
+    public Product build();
+    
+    <ConcreteBuilder.class>
+    public class ConcreteBuilder implements StepABuilder, StepBBuilder, StepCBuilder, Builder {
+
+        private Object fieldA;
+        private Object fieldB;
+        private Object fieldC;
+
+        @Override
+        public Product build() {
+            if(fieldA == null || fieldB == null || fieldC == null) {
+                throw new IllegalArgumentException();
+            }
+            return new Product(fieldA, fieldB, fieldC);
+        }
+
+        @Override
+        public StepBBuilder stepA(Object fieldA) {
+            this.fieldA = fieldA;
+            return this;
+        }
+
+        @Override
+        public StepCBuilder stepB(Object fieldB) {
+            this.fieldB = fieldB;
+            return this;
+        }
+
+        @Override
+        public Builder stepC(Object fieldC) {
+            this.fieldC = fieldC;
+            return this;
+        }
+    }
+
+    <Client.class>
+    Product product = new ConcreteBuilder()
+        .stepA("A")
+        .stepB("B")
+        .stepC("C")
+        .build();
+        
+써보면 알겠지만, stepA다음에는 stepB밖에 호출하지 못한다.  
+
+    
+    
 ### 장점
 ### 단점
 ### lombok annotation
