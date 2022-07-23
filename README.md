@@ -131,14 +131,15 @@
         .build();
         
 써보면 알겠지만, stepA다음에는 stepB밖에 호출하지 못한다.  
-
-https://dreamcoding.tistory.com/56  
-https://jung-story.tistory.com/131  
-    
     
 ### 장점
+후술 
+
 ### 단점
+후술
+
 ### lombok annotation
+
 ### Builder 필드 없애는 법
 ### Director
 
