@@ -131,6 +131,27 @@
         .build();
         
 써보면 알겠지만, stepA다음에는 stepB밖에 호출하지 못한다.  
+
+혹은 빌더의 생성자로 필수 파라미터를 받고, 나머지를 
+빌더 메소드로 받아도 된다.  
+
+    <ConcreteBuilder.class>
+    public ConcreteBuilder(String id) { ... };
+    public ConcreteBuilder setField1(String field1) { ... };
+    ...
+    public Product build() { 
+        if(id == null) throw new IllegalArgumentException()
+        else return new Product(....)
+    }
+    
+    <Client.class>
+    Product product = new ConcreteBuilder(124)
+            .setField1(...)
+            . ...
+            .build();
+
+그냥 빌더 메소드로 돌려도 되지만, 저렇게 하는게 필수 파라미터  
+임을 더 잘 나타내는 것 같다.  
     
 ### 장점
 후술 
@@ -139,9 +160,107 @@
 후술
 
 ### lombok annotation
+빌더 패턴을 직접 구현할 필요 없이, 어노테이션으로 대체할 수도 있다.  
+클래스 위에다가 아래처럼 어노테이션 붙이면 된다.  
+
+    @AllArgsConstructor(access = AccessLevel.PRIVATE) 
+    // 전체 인자의 생성자를 private으로 만든다.
+    @Builder(builderMethodName = "빌더 메소드 이름, builderMethod")
+    // Builder패턴을 자동으로 생성해준다.  
+    // 생성되는 빌더 메소드 이름을 적을 수도 있다.  
+    
+    <TravelCheckList.class>
+    field = {id, passport, flightTicket, creditCard}
+    
+    public static TravelCheckListBuilder builder(Long id) {
+        if(id == null) {
+            throw new IllegalArgumentException("필수 파라미터 누락");
+        }
+        else {  
+            return builderMethod().id(id);  
+            // builderMethod() <= 이게 생성된 빌더 메소드(어노테이션에 명시)  
+            // id는 필수 필드?니까, id를 먼저 설정한 빌더를 반환한다.  
+        }
+    }
+    
+    <Client.class>
+    TravelCheckList travelCheckList = TravelCheckList.builder(145L)
+            .passport("M12345")
+            .flightTicket("Paris flight ticket")
+            . ...
+            .build();
+            
+    // 필수 필드 지정 안할꺼면 어노테이션에서 명시한
+    // 빌더 메소드를 활용해서 아래처럼 해도 된다.  
+    
+    TravelCheckList travelCheckList = TravelCheckList.builderMethod()
+            .id(145L)
+            .passport("M12345")
+            . ...
+            .build()
+    
 
 ### Builder 필드 없애는 법
+빌더 메소드를 구현할 때, 해당 클래스에다가 Product의 필드를 전부 선언  
+해야 하는 번거로움이 있다. 이때, 그냥 Product 인스턴스 자체를 필드로  
+선언하고, 해당 인스턴스로 필드를 접근해도 된다. 가령,
+
+    <ConcreteBuilder.class>
+    private Product product;
+    
+    public ConcreteBuilder() {
+        this.product = new Product();
+    }
+    
+    ...
+    
+    public ConcreteBuilder setField1(String s) {
+        this.product.setField1(s);
+        return this
+    }
+    
+    ...
+    
+근데 이렇게 하면, Product 클래스에서 해당 필드의 setter 메소드를  
+구현해야 한다. (은닉이 안됨)  
+그리고 어찌되었든 Product 클래스에 의존하는 부분이 하나 더 생기니까  
+적절히 사용하도록 하자.  
+
 ### Director
+디렉터는 꼭 필요한 것은 아니지만, 빌더를 써서 자주 만드는 객체가  
+있다면, 동일한 코드를 만들지 않아도 된다. 그리고 복잡한 메소드  
+체이닝을 숨길 수 있다. (그냥 로직 따로 뺀거다.)
+
+    <Director.class>
+    private TourPlanBuilder tourPlanBuilder;
+    
+    public Director(TourPlanBuilder tourPlanBuilder) {
+        this.tourPlanBuilder = tourPlanBuilder;
+    }
+    
+    public TourPlan createOregonTourPlan() {
+        return tourPlanBuilder.setTitle("오레곤 롱비치 여행")
+                 .setDays(3)
+                 .setNights(2)
+                 .build();
+    }
+    
+    public TourPlan createCancunTourPlan() {
+        return tourPlanBuilder.setTitle("칸쿤 여행")
+                .setDays(3)
+                .setNights(2)
+                .setWhereToStay("신라호텔")
+                .setCost(1535100000)
+                .addPlan(0, "체크인하고 짐풀기")
+                . ...
+                .build();
+    }
+    
+    <Client.class>
+    TourPlan cancunTourPlan = new Director(new LongTourPlanBuilder())
+            .createCancunTourPlan();
+    TourPlan oregonTourPlan = new Director(new ShortTourPlanBuilder())
+            .createOregonTourPlan();
 
 <br>
 
